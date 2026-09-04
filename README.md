@@ -13,6 +13,11 @@ Brigham Byerly
 1. Navigate to the root of the repository.
 2. Run ``` ./build.sh ``` in the terminal.
 
+* Note: If on Windows, run ```build.bat``` instead
+
 ## Run Instructions: 
 1. Navigate to the root of the repository.
 2. Run ``` ./run.sh ``` in the terminal.
+
+* Note: If on Windows, run ```run.bat``` instead
+
