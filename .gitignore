@@ -1,6 +1,13 @@
+# OS-specific
 .DS_Store
 
+# User-level IDE and environment configs
 .vscode/
 
-build/
+
+/build/
 *.dSYM/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
