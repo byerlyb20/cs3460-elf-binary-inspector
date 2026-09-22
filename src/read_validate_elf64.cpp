@@ -2,9 +2,19 @@
 #include <elf.h>
 #include <cstring>
 #include "file_buffer.h"
+#include <iostream> 
 
-void print_elf_header(ElfHeader& header) {
+void print_elf_header(const ElfHeader& header) {
     // TODO: Print all fields in header
+    std::cout << "----ELF HEADER ----\n";
+    std::cout << "Type:                        " << header.type << "\n";
+    std::cout << "Entry:                       " << header.entry << "\n";
+    std::cout << "Program header offset:       " << header.program_header_offset << "\n";
+    std::cout << "Program header entry size:   " << header.program_header_entry_size << "\n";
+    std::cout << "Program header count:        " << header.program_header_count << "\n";
+    std::cout << "Section header offset:       " << header.section_header_offset << "\n";
+    std::cout << "Section header entry size:   " << header.section_header_entry_size << "\n";
+    std::cout << "Section header count:        " << header.section_header_count << "\n";
 }
 
 bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
