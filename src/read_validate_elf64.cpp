@@ -1,5 +1,5 @@
 #include "read_validate_elf64.h"
-#include <elf.h>
+#include "elf.h"
 #include <cstring>
 #include "file_buffer.h"
 #include <iostream> 
@@ -21,6 +21,7 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
     auto bytes = file.bytes();
     if (bytes.size() < sizeof(Elf64_Ehdr)) {
         // invalid/truncated input
+        fprintf(stderr, "read_validate_elf64: invalid/truncated input\n");
         return false;
     }
 
@@ -39,6 +40,7 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
         raw.e_ident[EI_VERSION] != EV_CURRENT ||
         raw.e_machine != EM_X86_64) {
         // unsupported ELF target
+        fprintf(stderr, "read_validate_elf64: unsupported ELF target\n");
         return false;
     }
 

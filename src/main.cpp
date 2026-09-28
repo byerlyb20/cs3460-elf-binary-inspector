@@ -2,10 +2,12 @@
 #include "file_buffer.h"
 #include "elf_header.h"
 #include "read_validate_elf64.h"
+#include <cstdio>
 
 int main(int argc, char* argv[])
 {
-    if (argc != 1) {
+    if (argc != 2) {
+        fprintf(stderr, "Got %d arguments, expected 1.\n", argc - 1);
         return 1;
     }
 
