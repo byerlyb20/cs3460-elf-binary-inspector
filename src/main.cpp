@@ -11,7 +11,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    const std::filesystem::path& path = std::filesystem::path(argv[0]);
+    const std::filesystem::path& path = std::filesystem::path(argv[1]);
 
     FileBuffer file = FileBuffer(path);
     ElfHeader elf_header;

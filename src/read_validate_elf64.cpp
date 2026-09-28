@@ -6,7 +6,7 @@
 
 void print_elf_header(const ElfHeader& header) {
     // TODO: Print all fields in header
-    std::cout << "----ELF HEADER ----\n";
+    std::cout << "---- ELF64, little-endian, x86-64 ----\n";
     std::cout << "Type:                        " << header.type << "\n";
     std::cout << "Entry:                       " << header.entry << "\n";
     std::cout << "Program header offset:       " << header.program_header_offset << "\n";
@@ -33,6 +33,7 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
         raw.e_ident[EI_MAG2] != ELFMAG2 ||
         raw.e_ident[EI_MAG3] != ELFMAG3) {
         // not an ELF file
+        fprintf(stderr, "read_validate_elf64: not an ELF file\n");
         return false;
     }
     if (raw.e_ident[EI_CLASS] != ELFCLASS64 ||
