@@ -1,1 +1,1 @@
-build\Debug\ELFBinaryInspector.exe
+build\Debug\ELFBinaryInspector.exe sample.elf
