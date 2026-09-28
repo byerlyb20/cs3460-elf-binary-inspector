@@ -5,16 +5,20 @@
 
 int main(int argc, char* argv[])
 {
-    // TODO: Read path from command line args
-    const std::filesystem::path& path;
+    if (argc != 1) {
+        return 1;
+    }
+
+    const std::filesystem::path& path = std::filesystem::path(argv[0]);
 
     FileBuffer file = FileBuffer(path);
     ElfHeader elf_header;
 
     if (read_validate_elf64(file, elf_header)) {
         print_elf_header(elf_header);
+    } else {
+        return 1;
     }
 
-    // TODO: Call read_validate_elf64 and print_elf_header
     return 0;
 }

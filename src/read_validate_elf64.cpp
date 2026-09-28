@@ -42,7 +42,14 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
         return false;
     }
 
-    // TODO: copy values into ElfHeader
+    elf_header.type = raw.e_type;
+    elf_header.entry = raw.e_entry;
+    elf_header.program_header_offset = raw.e_phoff;
+    elf_header.program_header_entry_size = raw.e_phentsize;
+    elf_header.program_header_count = raw.e_phnum;
+    elf_header.section_header_offset = raw.e_shoff;
+    elf_header.section_header_entry_size = raw.e_shentsize;
+    elf_header.section_header_count = raw.e_shnum;
 
     return true;
 }
