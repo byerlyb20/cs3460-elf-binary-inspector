@@ -1,1 +1,1 @@
-./build/ELFBinaryInspector
+./build/ELFBinaryInspector sample.elf

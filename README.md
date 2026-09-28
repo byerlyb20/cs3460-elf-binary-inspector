@@ -15,7 +15,10 @@ Brigham Byerly
 
 * Note: If on Windows, run ```build.bat``` instead
 
-## Run Instructions: 
+## Run Instructions:
+
+The run script runs the inspector against a `sample.elf` file that is included in this repo.
+
 1. Navigate to the root of the repository.
 2. Run ``` ./run.sh ``` in the terminal.
 
