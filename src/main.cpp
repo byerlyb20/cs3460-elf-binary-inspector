@@ -1,6 +1,6 @@
 #include <filesystem>
 #include "file_buffer.h"
-#include "elf_header.h"
+#include "elf_dtypes.h"
 #include "read_validate_elf64.h"
 #include <cstdio>
 

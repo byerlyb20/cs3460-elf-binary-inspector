@@ -2,6 +2,7 @@
 #include "elf.h"
 #include <cstring>
 #include "file_buffer.h"
+#include "binary_reader.h"
 #include <iostream> 
 
 void print_elf_header(const ElfHeader& header) {
@@ -17,7 +18,7 @@ void print_elf_header(const ElfHeader& header) {
     std::cout << "Section header count:        " << header.section_header_count << "\n";
 }
 
-bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
+bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
     auto bytes = file.bytes();
     if (bytes.size() < sizeof(Elf64_Ehdr)) {
         // invalid/truncated input
@@ -45,14 +46,91 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header) {
         return false;
     }
 
-    elf_header.type = raw.e_type;
-    elf_header.entry = raw.e_entry;
-    elf_header.program_header_offset = raw.e_phoff;
-    elf_header.program_header_entry_size = raw.e_phentsize;
-    elf_header.program_header_count = raw.e_phnum;
-    elf_header.section_header_offset = raw.e_shoff;
-    elf_header.section_header_entry_size = raw.e_shentsize;
-    elf_header.section_header_count = raw.e_shnum;
+    elf_header_out.type = raw.e_type;
+    elf_header_out.entry = raw.e_entry;
+    elf_header_out.program_header_offset = raw.e_phoff;
+    elf_header_out.program_header_entry_size = raw.e_phentsize;
+    elf_header_out.program_header_count = raw.e_phnum;
+    elf_header_out.section_header_offset = raw.e_shoff;
+    elf_header_out.section_header_entry_size = raw.e_shentsize;
+    elf_header_out.section_header_count = raw.e_shnum;
+    elf_header_out.section_name_table_index = raw.e_shstrndx;
 
     return true;
+}
+
+void read_section_name_table(
+    FileBuffer& file,
+    ElfHeader& header,
+    std::vector<Section>& sections_out
+) {
+    std::span<const std::byte> bytes = file.bytes();
+
+    // Locate and validate the table (code given in Milestone 2)
+
+    const std::uint64_t offset = header.section_header_offset;
+    const std::size_t count = header.section_header_count;
+    const std::size_t stride = header.section_header_entry_size;
+    if (stride != sizeof(Elf64_Shdr) || offset > bytes.size() ||
+        count > (bytes.size() - offset) / stride
+    ) {
+        throw std::runtime_error("Invalid section-header table");
+    }
+    std::vector<Elf64_Shdr> section_headers;
+    for (std::size_t i = 0; i < count; ++i) {
+        Elf64_Shdr raw{};
+        std::memcpy(&raw, bytes.data() + offset + i * stride, sizeof(raw));
+        if (raw.sh_type != SHT_NULL && raw.sh_type != SHT_NOBITS &&
+            raw.sh_size != 0 &&
+            !in_range(raw.sh_offset, raw.sh_size, bytes.size())
+        ) {
+            throw std::runtime_error("Invalid section data range");
+        }
+        section_headers.push_back(raw);
+    }
+
+    // END provided code
+
+    // For the section name table index at e_shstrndx: check the index,
+    // require SHT_STRTAB, and validate that header's sh_offset/sh_size
+
+    if (header.section_name_table_index >= count) {
+        throw std::runtime_error("Invalid section name table index");
+    }
+
+    Elf64_Shdr name_table_header = section_headers[header.section_name_table_index];
+    
+    if (name_table_header.sh_type != SHT_STRTAB) {
+        throw std::runtime_error("Invalid section type for section name table");
+    }
+
+    // Do we need to "validate that header's sh_offset/sh_size" here? Looks like
+    // the provided code already does that above
+
+    // Copy the bytes from the section name table section into a std::string named names
+    const char* name_table = (const char*) bytes.data() + name_table_header.sh_offset;
+    std::string names(name_table);
+
+    // Create each Section from its original index, resolved name, sh_offset, and sh_size
+    for (int i = 0; const Elf64_Shdr& section_header : section_headers) {
+        Section section = {
+            .index = i,
+            .name = read_name(names, section_header.sh_name),
+            .offset = section_header.sh_offset,
+            .size = section_header.sh_size
+        };
+        sections_out.push_back(section);
+    }
+}
+
+// Code given in Milestone 2
+// Ordinary helper, defined outside the parsing function.
+std::string read_name(const std::string& names, std::size_t start) {
+    if (names.empty() && start == 0) return {};
+    if (start >= names.size())
+        throw std::runtime_error("Invalid section-name offset");
+    const std::size_t end = names.find('\0', start);
+    if (end == std::string::npos)
+        throw std::runtime_error("Unterminated section name");
+    return names.substr(start, end - start);
 }
