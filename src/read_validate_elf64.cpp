@@ -98,28 +98,40 @@ void read_section_name_table(
         throw std::runtime_error("Invalid section name table index");
     }
 
-    Elf64_Shdr name_table_header = section_headers[header.section_name_table_index];
-    
-    if (name_table_header.sh_type != SHT_STRTAB) {
-        throw std::runtime_error("Invalid section type for section name table");
-    }
+    if (header.section_name_table_index == SHN_UNDEF) {
+        for (int i = 0; const Elf64_Shdr& section_header : section_headers) {
+            Section section = {
+                .index = i,
+                .name = "",
+                .offset = section_header.sh_offset,
+                .size = section_header.sh_size
+            };
+            sections_out.push_back(section);
+        }
+    } else {
+        Elf64_Shdr name_table_header = section_headers[header.section_name_table_index];
+        
+        if (name_table_header.sh_type != SHT_STRTAB) {
+            throw std::runtime_error("Invalid section type for section name table");
+        }
 
-    // Do we need to "validate that header's sh_offset/sh_size" here? Looks like
-    // the provided code already does that above
+        // Do we need to "validate that header's sh_offset/sh_size" here? Looks like
+        // the provided code already does that above
 
-    // Copy the bytes from the section name table section into a std::string named names
-    const char* name_table = (const char*) bytes.data() + name_table_header.sh_offset;
-    std::string names(name_table);
+        // Copy the bytes from the section name table section into a std::string named names
+        const char* name_table = (const char*) bytes.data() + name_table_header.sh_offset;
+        std::string names(name_table);
 
-    // Create each Section from its original index, resolved name, sh_offset, and sh_size
-    for (int i = 0; const Elf64_Shdr& section_header : section_headers) {
-        Section section = {
-            .index = i,
-            .name = read_name(names, section_header.sh_name),
-            .offset = section_header.sh_offset,
-            .size = section_header.sh_size
-        };
-        sections_out.push_back(section);
+        // Create each Section from its original index, resolved name, sh_offset, and sh_size
+        for (int i = 0; const Elf64_Shdr& section_header : section_headers) {
+            Section section = {
+                .index = i,
+                .name = read_name(names, section_header.sh_name),
+                .offset = section_header.sh_offset,
+                .size = section_header.sh_size
+            };
+            sections_out.push_back(section);
+        }
     }
 }
 
