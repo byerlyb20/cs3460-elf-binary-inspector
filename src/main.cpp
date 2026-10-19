@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
         read_section_name_table(file, elf_header, sections);
 
         std::vector<Segment> segments;
-        read_program_headers(file, elf_header, segments);
+        // read_program_headers(file, elf_header, segments);
 
         print_elf_header(elf_header, sections, segments);
     } else {

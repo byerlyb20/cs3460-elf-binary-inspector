@@ -24,6 +24,7 @@ void print_elf_header(
 ELF64 | little-endian | x86-64 | EXEC | Entry: 0x%06x
 Program headers: offset=0x%06x, entry_size=%d, count=%d
 Section headers: offset=0x%06x, entry_size=%d, count=%d
+
 )",
         "sample.elf",
         header.entry,
@@ -34,6 +35,41 @@ Section headers: offset=0x%06x, entry_size=%d, count=%d
         header.section_header_entry_size,
         header.section_header_count
     );
+    printf(R"(Sections
+INDEX       NAME      OFFSET      SIZE_BYTES
+
+    )");
+
+for (Section item: sections){
+   printf(R"(
+%d          %s        0x%06x      %d
+)",
+        item.index,
+        item.name,
+        item.offset,
+        item.size
+    ); 
+}
+    printf(R"(Program headers
+IDX     TYPE       OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN
+
+    )");
+
+    for (Segment item: segments){
+   printf(R"(
+%d       %s        0x%06x      0x%06x     %d       %d       %s      0x%06x
+)",
+        item.index,
+        item.type,
+        item.offset,
+        item.virtual_address,
+        item.file_size,
+        item.memory_size, 
+        permission_text(item.flags),
+        item.alignment
+    ); 
+}
+
 }
 
 bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
