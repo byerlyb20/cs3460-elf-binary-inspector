@@ -50,7 +50,8 @@ for (Section item: sections){
         item.size
     ); 
 }
-    printf(R"(Program headers
+
+    printf("\n" R"(Program headers
 IDX     TYPE       OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN
 
     )");
