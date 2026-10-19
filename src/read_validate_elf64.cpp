@@ -156,13 +156,27 @@ void read_program_headers(
     std::vector<Segment>& segments_out
 ){
     std::span<const std::byte> bytes = file.bytes();
+
     // offset, count, and stride now describe the program-header table.
-    for (std::size_t i = 0; i < header.program_header_count; ++i) {
+    const std::uint64_t offset = header.section_header_offset;
+    const std::size_t count = header.section_header_count;
+    const std::size_t stride = header.section_header_entry_size;
+    if (stride != sizeof(Elf64_Phdr) || offset > bytes.size() ||
+        count > (bytes.size() - offset) / stride
+    ) {
+        throw std::runtime_error("Invalid section-header table");
+    }
+
+    for (std::size_t i = 0; i < count; ++i) {
         Elf64_Phdr raw{};
-        std::memcpy(&raw, bytes.data() + header.program_header_offset + i * header.program_header_entry_size, sizeof(raw));
-        if (raw.p_type != PT_NULL && raw.p_filesz != 0 &&
-        !in_range(raw.p_offset, raw.p_filesz, bytes.size()))
-        throw std::runtime_error("Invalid segment data range");
+        std::memcpy(&raw, bytes.data() + offset + i * stride, sizeof(raw));
+
+        if (
+            raw.p_type != PT_NULL && raw.p_filesz != 0 &&
+            !in_range(raw.p_offset, raw.p_filesz, bytes.size())
+        )
+            throw std::runtime_error("Invalid segment data range");
+
         Segment s;
         s.index = static_cast<std::uint32_t>(i);
         s.type = raw.p_type;
@@ -172,6 +186,11 @@ void read_program_headers(
         s.file_size = raw.p_filesz;
         s.memory_size = raw.p_memsz;
         s.alignment = raw.p_align;
+
+        if (s.offset > bytes.size() || s.file_size > bytes.size() - offset) {
+            throw std::runtime_error("Invalid program header");
+        }
+
         segments_out.push_back(s);
     }
 }
