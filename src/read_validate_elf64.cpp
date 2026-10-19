@@ -3,19 +3,37 @@
 #include <cstring>
 #include "file_buffer.h"
 #include "binary_reader.h"
-#include <iostream> 
+#include <iostream>
+#include <cstdio>
 
-void print_elf_header(const ElfHeader& header) {
+std::string permission_text(std::uint32_t flags) {
+    std::string text = "---";
+    if ((flags & PF_R) != 0) text[0] = 'R';
+    if ((flags & PF_W) != 0) text[1] = 'W';
+    if ((flags & PF_X) != 0) text[2] = 'X';
+    return text;
+}
+
+void print_elf_header(
+    const ElfHeader& header,
+    const std::vector<Section>& sections,
+    const std::vector<Segment>& segments
+) {
     // TODO: Print all fields in header
-    std::cout << "---- ELF64, little-endian, x86-64 ----\n";
-    std::cout << "Type:                        " << header.type << "\n";
-    std::cout << "Entry:                       " << header.entry << "\n";
-    std::cout << "Program header offset:       " << header.program_header_offset << "\n";
-    std::cout << "Program header entry size:   " << header.program_header_entry_size << "\n";
-    std::cout << "Program header count:        " << header.program_header_count << "\n";
-    std::cout << "Section header offset:       " << header.section_header_offset << "\n";
-    std::cout << "Section header entry size:   " << header.section_header_entry_size << "\n";
-    std::cout << "Section header count:        " << header.section_header_count << "\n";
+    printf(R"(File: %s
+ELF64 | little-endian | x86-64 | EXEC | Entry: 0x%06x
+Program headers: offset=0x%06x, entry_size=%d, count=%d
+Section headers: offset=0x%06x, entry_size=%d, count=%d
+)",
+        "sample.elf",
+        header.entry,
+        header.program_header_offset,
+        header.program_header_entry_size,
+        header.program_header_count,
+        header.section_header_offset,
+        header.section_header_entry_size,
+        header.section_header_count
+    );
 }
 
 bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {

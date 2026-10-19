@@ -17,7 +17,13 @@ int main(int argc, char* argv[])
     ElfHeader elf_header;
 
     if (read_validate_elf64(file, elf_header)) {
-        print_elf_header(elf_header);
+        std::vector<Section> sections;
+        read_section_name_table(file, elf_header, sections);
+
+        std::vector<Segment> segments;
+        read_program_headers(file, elf_header, segments);
+
+        print_elf_header(elf_header, sections, segments);
     } else {
         return 1;
     }
