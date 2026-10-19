@@ -142,7 +142,7 @@ void read_section_name_table(
     if (stride != sizeof(Elf64_Shdr) || offset > bytes.size() ||
         count > (bytes.size() - offset) / stride
     ) {
-        throw std::runtime_error("Invalid section-header table");
+        throw std::runtime_error("Invalid section header table");
     }
     std::vector<Elf64_Shdr> section_headers;
     for (std::size_t i = 0; i < count; ++i) {
@@ -212,13 +212,16 @@ void read_program_headers(
     std::span<const std::byte> bytes = file.bytes();
 
     // offset, count, and stride now describe the program-header table.
-    const std::uint64_t offset = header.section_header_offset;
-    const std::size_t count = header.section_header_count;
-    const std::size_t stride = header.section_header_entry_size;
-    if (stride != sizeof(Elf64_Phdr) || offset > bytes.size() ||
+    const std::uint64_t offset = header.program_header_offset;
+    const std::size_t count = header.program_header_count;
+    const std::size_t stride = header.program_header_entry_size;
+
+    // e_phentsize can be zero if there is no program header table
+    if ((stride != 0 && stride != sizeof(Elf64_Phdr)) ||
+        offset > bytes.size() ||
         count > (bytes.size() - offset) / stride
     ) {
-        throw std::runtime_error("Invalid section-header table");
+        throw std::runtime_error("Invalid program header table");
     }
 
     for (std::size_t i = 0; i < count; ++i) {
