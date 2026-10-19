@@ -59,6 +59,20 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
     return true;
 }
 
+// Code given in Milestone 2
+// Ordinary helper, defined outside the parsing function.
+std::string read_name(const std::string& names, std::size_t start) {
+    if (names.empty() && start == 0) return {};
+    if (start >= names.size())
+        throw std::runtime_error("Invalid section-name offset");
+    const std::size_t end = names.find('\0', start);
+    if (end == std::string::npos)
+        throw std::runtime_error("Unterminated section name");
+    return names.substr(start, end - start);
+}
+
+
+
 void read_section_name_table(
     FileBuffer& file,
     ElfHeader& header,
@@ -99,7 +113,7 @@ void read_section_name_table(
     }
 
     if (header.section_name_table_index == SHN_UNDEF) {
-        for (int i = 0; const Elf64_Shdr& section_header : section_headers) {
+        for (uint32_t i = 0; const Elf64_Shdr& section_header : section_headers) {
             Section section = {
                 .index = i,
                 .name = "",
@@ -120,10 +134,10 @@ void read_section_name_table(
 
         // Copy the bytes from the section name table section into a std::string named names
         const char* name_table = (const char*) bytes.data() + name_table_header.sh_offset;
-        std::string names(name_table);
+        std::string names(name_table, name_table_header.sh_size);
 
         // Create each Section from its original index, resolved name, sh_offset, and sh_size
-        for (int i = 0; const Elf64_Shdr& section_header : section_headers) {
+        for (uint32_t i = 0; const Elf64_Shdr& section_header : section_headers) {
             Section section = {
                 .index = i,
                 .name = read_name(names, section_header.sh_name),
@@ -135,14 +149,29 @@ void read_section_name_table(
     }
 }
 
-// Code given in Milestone 2
-// Ordinary helper, defined outside the parsing function.
-std::string read_name(const std::string& names, std::size_t start) {
-    if (names.empty() && start == 0) return {};
-    if (start >= names.size())
-        throw std::runtime_error("Invalid section-name offset");
-    const std::size_t end = names.find('\0', start);
-    if (end == std::string::npos)
-        throw std::runtime_error("Unterminated section name");
-    return names.substr(start, end - start);
+
+void read_program_headers(
+    FileBuffer& file,
+    ElfHeader& header,
+    std::vector<Segment>& segments_out
+){
+    std::span<const std::byte> bytes = file.bytes();
+    // offset, count, and stride now describe the program-header table.
+    for (std::size_t i = 0; i < header.program_header_count; ++i) {
+        Elf64_Phdr raw{};
+        std::memcpy(&raw, bytes.data() + header.program_header_offset + i * header.program_header_entry_size, sizeof(raw));
+        if (raw.p_type != PT_NULL && raw.p_filesz != 0 &&
+        !in_range(raw.p_offset, raw.p_filesz, bytes.size()))
+        throw std::runtime_error("Invalid segment data range");
+        Segment s;
+        s.index = static_cast<std::uint32_t>(i);
+        s.type = raw.p_type;
+        s.flags = raw.p_flags;
+        s.offset = raw.p_offset;
+        s.virtual_address = raw.p_vaddr;
+        s.file_size = raw.p_filesz;
+        s.memory_size = raw.p_memsz;
+        s.alignment = raw.p_align;
+        segments_out.push_back(s);
+    }
 }

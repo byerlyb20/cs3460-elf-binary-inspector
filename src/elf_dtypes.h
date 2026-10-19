@@ -22,4 +22,10 @@ struct Section {
     std::uint64_t offset{}, size{};
 };
 
+struct Segment {
+    std::uint32_t index{}, type{}, flags{};
+    std::uint64_t offset{}, virtual_address{};
+    std::uint64_t file_size{}, memory_size{}, alignment{};
+};
+
 #endif
