@@ -23,6 +23,7 @@ int main(int argc, char* argv[])
         std::vector<Segment> segments;
         read_program_headers(file, elf_header, segments);
 
+        printf("File: %s\n", argv[1]);
         print_elf_header(elf_header, sections, segments);
     } else {
         return 1;

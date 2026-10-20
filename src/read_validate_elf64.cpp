@@ -70,14 +70,11 @@ void print_elf_header(
     const std::vector<Section>& sections,
     const std::vector<Segment>& segments
 ) {
-    // TODO: Print all fields in header
-    printf(R"(File: %s
-ELF64 | little-endian | x86-64 | %s | Entry: 0x%06llx
+    printf(R"(ELF64 | little-endian | x86-64 | %s | Entry: 0x%06llx
 Program headers: offset=0x%06llx, entry_size=%d, count=%d
 Section headers: offset=0x%06llx, entry_size=%d, count=%d
 
 )",
-        "sample.elf",
         elf_type_text(header.type).c_str(),
         header.entry,
         header.program_header_offset,
