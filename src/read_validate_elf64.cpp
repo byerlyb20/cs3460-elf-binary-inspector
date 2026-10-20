@@ -6,12 +6,63 @@
 #include <iostream>
 #include <cstdio>
 
+std::string elf_type_text(uint32_t type) {
+    switch (type) {
+        case ET_NONE:
+        return "NONE";
+        break;
+        case ET_REL:
+        return "REL";
+        break;
+        case ET_EXEC:
+        return "EXEC";
+        break;
+        case ET_DYN:
+        return "DYN";
+        break;
+        case ET_CORE:
+        return "CORE";
+        break;
+        case ET_NUM:
+        return "NUM";
+        break;
+    }
+    return std::format("0x{:x}", type);
+}
+
 std::string permission_text(std::uint32_t flags) {
     std::string text = "---";
     if ((flags & PF_R) != 0) text[0] = 'R';
     if ((flags & PF_W) != 0) text[1] = 'W';
     if ((flags & PF_X) != 0) text[2] = 'X';
     return text;
+}
+
+std::string pheader_type_text(uint32_t type) {
+    switch (type) {
+        case PT_NULL:
+        return "NULL      ";
+        break;
+        case PT_LOAD:
+        return "LOAD      ";
+        break;
+        case PT_DYNAMIC:
+        return "DYNAMIC   ";
+        break;
+        case PT_INTERP:
+        return "INTERP    ";
+        break;
+        case PT_NOTE:
+        return "NOTE      ";
+        break;
+        case PT_PHDR:
+        return "PHDR      ";
+        break;
+        case PT_TLS:
+        return "TLS       ";
+        break;
+    }
+    return std::format("0x{:08x}", type);
 }
 
 void print_elf_header(
@@ -21,12 +72,13 @@ void print_elf_header(
 ) {
     // TODO: Print all fields in header
     printf(R"(File: %s
-ELF64 | little-endian | x86-64 | EXEC | Entry: 0x%06x
-Program headers: offset=0x%06x, entry_size=%d, count=%d
-Section headers: offset=0x%06x, entry_size=%d, count=%d
+ELF64 | little-endian | x86-64 | %s | Entry: 0x%06llx
+Program headers: offset=0x%06llx, entry_size=%d, count=%d
+Section headers: offset=0x%06llx, entry_size=%d, count=%d
 
 )",
         "sample.elf",
+        elf_type_text(header.type).c_str(),
         header.entry,
         header.program_header_offset,
         header.program_header_entry_size,
@@ -35,41 +87,31 @@ Section headers: offset=0x%06x, entry_size=%d, count=%d
         header.section_header_entry_size,
         header.section_header_count
     );
-    printf(R"(Sections
-INDEX       NAME      OFFSET      SIZE_BYTES
+    printf("Sections\nINDEX   NAME            OFFSET        SIZE_BYTES\n");
 
-    )");
+    for (Section item: sections) {
+        printf("%-3d     %-16s0x%06llx      %llu\n",
+            item.index,
+            item.name.c_str(),
+            item.offset,
+            item.size
+        );
+    }
 
-for (Section item: sections){
-   printf(R"(
-%d          %s        0x%06x      %d
-)",
-        item.index,
-        item.name,
-        item.offset,
-        item.size
-    ); 
-}
+    printf("\nProgram headers\nIDX   TYPE            OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN\n");
 
-    printf("\n" R"(Program headers
-IDX     TYPE       OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN
-
-    )");
-
-    for (Segment item: segments){
-   printf(R"(
-%d       %s        0x%06x      0x%06x     %d       %d       %s      0x%06x
-)",
-        item.index,
-        item.type,
-        item.offset,
-        item.virtual_address,
-        item.file_size,
-        item.memory_size, 
-        permission_text(item.flags),
-        item.alignment
-    ); 
-}
+    for (Segment item: segments) {
+        printf("%-3d   %s      0x%06llx    0x%06llx   %-4llu      %-4llu    %s     0x%06llx\n",
+            item.index,
+            pheader_type_text(item.type).c_str(),
+            item.offset,
+            item.virtual_address,
+            item.file_size,
+            item.memory_size, 
+            permission_text(item.flags).c_str(),
+            item.alignment
+        );
+    }
 
 }
 
@@ -176,6 +218,8 @@ void read_section_name_table(
                 .size = section_header.sh_size
             };
             sections_out.push_back(section);
+
+            ++i;
         }
     } else {
         Elf64_Shdr name_table_header = section_headers[header.section_name_table_index];
@@ -200,6 +244,8 @@ void read_section_name_table(
                 .size = section_header.sh_size
             };
             sections_out.push_back(section);
+
+            ++i;
         }
     }
 }
