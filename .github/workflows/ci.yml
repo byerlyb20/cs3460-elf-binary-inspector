@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with warnings as errors
+        run: |
+          cmake -S . -B build \
+            -DELF_WARNINGS_AS_ERRORS=ON \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake --build build
+      - name: Install Include What You Use
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes iwyu
+      - name: Check include dependencies
+        run: iwyu_tool.py -p build -- -Xiwyu --error

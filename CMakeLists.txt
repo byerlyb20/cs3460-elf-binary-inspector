@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 
 project(ELFBinaryInspector) 
 
+option(ELF_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+
 add_executable(ELFBinaryInspector src/main.cpp)
 
 target_sources(ELFBinaryInspector PRIVATE
@@ -11,3 +13,12 @@ target_sources(ELFBinaryInspector PRIVATE
 )
 
 set_property(TARGET ELFBinaryInspector PROPERTY CXX_STANDARD 20)
+
+if(MSVC)
+    target_compile_options(ELFBinaryInspector PRIVATE /W4)
+else()
+    target_compile_options(ELFBinaryInspector PRIVATE -Wall -Wextra -Wpedantic)
+    if(ELF_WARNINGS_AS_ERRORS)
+        target_compile_options(ELFBinaryInspector PRIVATE -Werror)
+    endif()
+endif()
