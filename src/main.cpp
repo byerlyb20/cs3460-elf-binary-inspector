@@ -3,6 +3,7 @@
 #include "elf_dtypes.h"
 #include "read_validate_elf64.h"
 #include <cstdio>
+#include <vector>
 
 int main(int argc, char* argv[])
 {

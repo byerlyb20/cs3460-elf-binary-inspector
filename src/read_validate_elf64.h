@@ -1,6 +1,7 @@
 #include <filesystem>
 #include "elf_dtypes.h"
 #include "file_buffer.h"
+#include <vector>
 
 void print_elf_header(const ElfHeader& header, const std::vector<Section>& sections, const std::vector<Segment>& segments);
 bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out);
