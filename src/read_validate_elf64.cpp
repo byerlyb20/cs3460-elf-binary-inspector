@@ -5,6 +5,7 @@
 #include "binary_reader.h"
 #include <iostream>
 #include <cstdio>
+#include <format>
 
 std::string elf_type_text(uint32_t type) {
     switch (type) {
@@ -70,9 +71,9 @@ void print_elf_header(
     const std::vector<Section>& sections,
     const std::vector<Segment>& segments
 ) {
-    printf(R"(ELF64 | little-endian | x86-64 | %s | Entry: 0x%06llx
-Program headers: offset=0x%06llx, entry_size=%d, count=%d
-Section headers: offset=0x%06llx, entry_size=%d, count=%d
+    printf(R"(ELF64 | little-endian | x86-64 | %s | Entry: 0x%06lx
+Program headers: offset=0x%06lx, entry_size=%d, count=%d
+Section headers: offset=0x%06lx, entry_size=%d, count=%d
 
 )",
         elf_type_text(header.type).c_str(),
@@ -87,7 +88,7 @@ Section headers: offset=0x%06llx, entry_size=%d, count=%d
     printf("Sections\nINDEX   NAME            OFFSET        SIZE_BYTES\n");
 
     for (Section item: sections) {
-        printf("%-3d     %-16s0x%06llx      %llu\n",
+        printf("%-3d     %-16s0x%06lx      %lu\n",
             item.index,
             item.name.c_str(),
             item.offset,
@@ -98,7 +99,7 @@ Section headers: offset=0x%06llx, entry_size=%d, count=%d
     printf("\nProgram headers\nIDX   TYPE            OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN\n");
 
     for (Segment item: segments) {
-        printf("%-3d   %s      0x%06llx    0x%06llx   %-4llu      %-4llu    %s     0x%06llx\n",
+        printf("%-3d   %s      0x%06lx    0x%06lx   %-4lu      %-4lu    %s     0x%06lx\n",
             item.index,
             pheader_type_text(item.type).c_str(),
             item.offset,
