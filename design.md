@@ -1,3 +1,5 @@
+# Technical Report: Refactoring
+
 ## Requirements
 
 <!--
@@ -6,6 +8,12 @@ Briefly describe the major functional requirements of your project.
 - Make each requirement clear and testable.
 - Use requirement IDs (e.g., R1, R2, R3) for reference.
 -->
+
+- R1: Reads and validates `Elf64_Ehdr.e_ident` for magic number, class, data endianness, version, and machine architecture (supports little-endian, x86-64).
+- R2: Creates an `ElfHeader` object from a valid ELF binary with all fields populated.
+- R3: Reads section size and offset for all section headers present in binary.
+- R4: Reads section names from the section name table for all section headers present in binary, failing safely with empty strings if the section name table index is `SHN_UNDEF`.
+- R5: 
 
 ## System Design
 
