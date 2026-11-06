@@ -4,29 +4,22 @@
 #include "file_buffer.h"
 #include "binary_reader.h"
 #include <iostream>
-#include <cstdio>
 #include <format>
 
 std::string elf_type_text(uint32_t type) {
     switch (type) {
         case ET_NONE:
         return "NONE";
-        break;
         case ET_REL:
         return "REL";
-        break;
         case ET_EXEC:
         return "EXEC";
-        break;
         case ET_DYN:
         return "DYN";
-        break;
         case ET_CORE:
         return "CORE";
-        break;
         case ET_NUM:
         return "NUM";
-        break;
     }
     return std::format("0x{:x}", type);
 }
@@ -43,25 +36,18 @@ std::string pheader_type_text(uint32_t type) {
     switch (type) {
         case PT_NULL:
         return "NULL      ";
-        break;
         case PT_LOAD:
         return "LOAD      ";
-        break;
         case PT_DYNAMIC:
         return "DYNAMIC   ";
-        break;
         case PT_INTERP:
         return "INTERP    ";
-        break;
         case PT_NOTE:
         return "NOTE      ";
-        break;
         case PT_PHDR:
         return "PHDR      ";
-        break;
         case PT_TLS:
         return "TLS       ";
-        break;
     }
     return std::format("0x{:08x}", type);
 }
@@ -71,12 +57,12 @@ void print_elf_header(
     const std::vector<Section>& sections,
     const std::vector<Segment>& segments
 ) {
-    printf(R"(ELF64 | little-endian | x86-64 | %s | Entry: 0x%06lx
-Program headers: offset=0x%06lx, entry_size=%d, count=%d
-Section headers: offset=0x%06lx, entry_size=%d, count=%d
+    std::cout << std::format(R"(ELF64 | little-endian | x86-64 | {} | Entry: 0x{:06x}
+Program headers: offset=0x{:06x}, entry_size={}, count={}
+Section headers: offset=0x{:06x}, entry_size={}, count={}
 
 )",
-        elf_type_text(header.type).c_str(),
+        elf_type_text(header.type),
         header.entry,
         header.program_header_offset,
         header.program_header_entry_size,
@@ -85,40 +71,39 @@ Section headers: offset=0x%06lx, entry_size=%d, count=%d
         header.section_header_entry_size,
         header.section_header_count
     );
-    printf("Sections\nINDEX   NAME            OFFSET        SIZE_BYTES\n");
+    std::cout << "Sections\nINDEX   NAME            OFFSET        SIZE_BYTES\n";
 
-    for (Section item: sections) {
-        printf("%-3d     %-16s0x%06lx      %lu\n",
+    for (const Section& item: sections) {
+        std::cout << std::format("{:<3}     {:<16}0x{:06x}      {}\n",
             item.index,
-            item.name.c_str(),
+            item.name,
             item.offset,
             item.size
         );
     }
 
-    printf("\nProgram headers\nIDX   TYPE            OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN\n");
+    std::cout << "\nProgram headers\nIDX   TYPE            OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN\n";
 
-    for (Segment item: segments) {
-        printf("%-3d   %s      0x%06lx    0x%06lx   %-4lu      %-4lu    %s     0x%06lx\n",
+    for (const Segment& item: segments) {
+        std::cout << std::format("{:<3}   {}      0x{:06x}    0x{:06x}   {:<4}      {:<4}    {}     0x{:06x}\n",
             item.index,
-            pheader_type_text(item.type).c_str(),
+            pheader_type_text(item.type),
             item.offset,
             item.virtual_address,
             item.file_size,
             item.memory_size, 
-            permission_text(item.flags).c_str(),
+            permission_text(item.flags),
             item.alignment
         );
     }
 
 }
 
-bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
+void read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
     auto bytes = file.bytes();
     if (bytes.size() < sizeof(Elf64_Ehdr)) {
         // invalid/truncated input
-        fprintf(stderr, "read_validate_elf64: invalid/truncated input\n");
-        return false;
+        throw std::runtime_error("Invalid/truncated input");
     }
 
     Elf64_Ehdr raw{};
@@ -129,16 +114,14 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
         raw.e_ident[EI_MAG2] != ELFMAG2 ||
         raw.e_ident[EI_MAG3] != ELFMAG3) {
         // not an ELF file
-        fprintf(stderr, "read_validate_elf64: not an ELF file\n");
-        return false;
+        throw std::runtime_error("Not an ELF file");
     }
     if (raw.e_ident[EI_CLASS] != ELFCLASS64 ||
         raw.e_ident[EI_DATA] != ELFDATA2LSB ||
         raw.e_ident[EI_VERSION] != EV_CURRENT ||
         raw.e_machine != EM_X86_64) {
         // unsupported ELF target
-        fprintf(stderr, "read_validate_elf64: unsupported ELF target\n");
-        return false;
+        throw std::runtime_error("Unsupported ELF target");
     }
 
     elf_header_out.type = raw.e_type;
@@ -150,8 +133,6 @@ bool read_validate_elf64(FileBuffer& file, ElfHeader& elf_header_out) {
     elf_header_out.section_header_entry_size = raw.e_shentsize;
     elf_header_out.section_header_count = raw.e_shnum;
     elf_header_out.section_name_table_index = raw.e_shstrndx;
-
-    return true;
 }
 
 // Code given in Milestone 2
