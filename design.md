@@ -188,14 +188,29 @@ End-to-end tests include things like ensuring that all metadata desired is print
 
 ### Planned Test Cases
 
-| Test ID | Target/Setup | Expected Result |
+| Test ID | Target | Setup | Expected Result |
+|---|---|---|---|
+| T1 | ELF header validation. | Provide a valid little-endian x86-64 ELF file, followed by invalid files (e.g., wrong magic number, 32-bit class, or wrong endianness). | The valid file parses successfully, while the invalid files throw an appropriate exception. |
+| T2 | Section size and offset extraction. | Parse a valid ELF file with known section sizes and offsets. | The extracted `offset` and `size` values match the known binary properties exactly. |
+| T3 | Section name resolution and `SHN_UNDEF` handling. | Parse an ELF file with a valid section name table, and another where `e_shstrndx` is set to `SHN_UNDEF`. | Valid names are resolved correctly, and the `SHN_UNDEF` file safely assigns empty strings to section names without crashing. |
+| T4 | Program header bounds validation. | Parse an ELF file with valid program headers, and another with a corrupted `e_phentsize` or `e_phnum` that exceeds file bounds. | Valid headers are read successfully, while out-of-bounds configurations throw a safe runtime exception. |
+| T5 | Program header property extraction. | Parse an ELF file with known program header values. | The program type, offset, virtual address, file size, and memory size exactly match the expected binary properties. |
+| T6 | Segment struct population. | Pass valid program header data into the segment mapping logic. | The resulting `Segment` structs correctly store all mapped attributes from the parsed data. |
+| T7 | ELF header formatting and printing. | Invoke the print function with a fully populated `ElfHeader` object. | The console output exactly matches the required header formatting and values. |
+| T8 | Section struct formatting and printing. | Invoke the print function with a vector of populated `Section` structs. | The console output correctly formats and displays the index, name, offset, and size for all sections. |
+| T9 | Segment struct formatting and printing. | Invoke the print function with a vector of populated `Segment` structs. | The console output correctly formats and displays all specified properties for all segments. |
+
+
+### Test Coverage Plan
+
+| Requirement | Supporting tests | Evidence to record in final milestone |
 |---|---|---|
-| T1 | **Target:** ELF header validation.<br>**Setup:** Provide a valid little-endian x86-64 ELF file, followed by invalid files (e.g., wrong magic number, 32-bit class, or wrong endianness). | The valid file parses successfully, while the invalid files throw an appropriate exception. |
-| T2 | **Target:** Section size and offset extraction.<br>**Setup:** Parse a valid ELF file with known section sizes and offsets. | The extracted `offset` and `size` values match the known binary properties exactly. |
-| T3 | **Target:** Section name resolution and `SHN_UNDEF` handling.<br>**Setup:** Parse an ELF file with a valid section name table, and another where `e_shstrndx` is set to `SHN_UNDEF`. | Valid names are resolved correctly, and the `SHN_UNDEF` file safely assigns empty strings to section names without crashing. |
-| T4 | **Target:** Program header bounds validation.<br>**Setup:** Parse an ELF file with valid program headers, and another with a corrupted `e_phentsize` or `e_phnum` that exceeds file bounds. | Valid headers are read successfully, while out-of-bounds configurations throw a safe runtime exception. |
-| T5 | **Target:** Program header property extraction.<br>**Setup:** Parse an ELF file with known program header values. | The program type, offset, virtual address, file size, and memory size exactly match the expected binary properties. |
-| T6 | **Target:** Segment struct population.<br>**Setup:** Pass valid program header data into the segment mapping logic. | The resulting `Segment` structs correctly store all mapped attributes from the parsed data. |
-| T7 | **Target:** ELF header formatting and printing.<br>**Setup:** Invoke the print function with a fully populated `ElfHeader` object. | The console output exactly matches the required header formatting and values. |
-| T8 | **Target:** Section struct formatting and printing.<br>**Setup:** Invoke the print function with a vector of populated `Section` structs. | The console output correctly formats and displays the index, name, offset, and size for all sections. |
-| T9 | **Target:** Segment struct formatting and printing.<br>**Setup:** Invoke the print function with a vector of populated `Segment` structs. | The console output correctly formats and displays all specified properties for all segments. |
+| R1 — ELF header validation | T1, T7 | Console output showing successful parse of a valid file and safe rejection of invalid files (wrong magic number, class, endianness). |
+| R3 — Section size and offset | T2, T8 | Memory inspection or console output confirming extracted `offset` and `size` match `readelf` output. |
+| R4 — Section names & SHN_UNDEF | T3, T8 | Console output demonstrating accurate name resolution and safe fallback to empty strings for `SHN_UNDEF`. |
+| R5 — Program header bounds | T4 | Console output showing a caught exception when providing a binary with out-of-bounds program header sizes. |
+| R6 — Program header properties | T5, T6, T9 | Extracted virtual addresses, file sizes, and memory sizes matching expected known binary properties. |
+| R7 — Segment struct population | T6, T9 | Segment objects successfully instantiated and populated in memory prior to printing. |
+| R8 — Print ElfHeader | T7 | Formatted standard output exactly matching the expected milestone specification for the header. |
+| R9 — Print Section structs | T8 | Formatted standard output exactly matching the expected milestone specification for sections. |
+| R10 — Print Segment structs | T9 | Formatted standard output exactly matching the expected milestone specification for segments. |
