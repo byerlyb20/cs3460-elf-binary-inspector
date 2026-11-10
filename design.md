@@ -179,3 +179,21 @@ Briefly explain how your planned tests cover the major requirements.
 
 You only need to design the tests in this milestone. They will be implemented and executed in the final milestone.
 -->
+
+The tests are based on the requirements listed above and include both singular component tests and integrated or end-to-end tests. Singular component tests include things like ensuring a segment can be created using the factory, or that a name can be retrieved from the section name table. 
+
+End-to-end tests include things like ensuring that all metadata desired is printed when the program is given an ELF Binary file. The following test cases specify expected behavior and will be implemented in a further step:
+
+### Planned Test Cases
+
+| Test ID | Target/Setup | Expected Result |
+|---|---|---|
+| T1 | **Target:** ELF header validation.<br>**Setup:** Provide a valid little-endian x86-64 ELF file, followed by invalid files (e.g., wrong magic number, 32-bit class, or wrong endianness). | The valid file parses successfully, while the invalid files throw an appropriate exception. |
+| T2 | **Target:** Section size and offset extraction.<br>**Setup:** Parse a valid ELF file with known section sizes and offsets. | The extracted `offset` and `size` values match the known binary properties exactly. |
+| T3 | **Target:** Section name resolution and `SHN_UNDEF` handling.<br>**Setup:** Parse an ELF file with a valid section name table, and another where `e_shstrndx` is set to `SHN_UNDEF`. | Valid names are resolved correctly, and the `SHN_UNDEF` file safely assigns empty strings to section names without crashing. |
+| T4 | **Target:** Program header bounds validation.<br>**Setup:** Parse an ELF file with valid program headers, and another with a corrupted `e_phentsize` or `e_phnum` that exceeds file bounds. | Valid headers are read successfully, while out-of-bounds configurations throw a safe runtime exception. |
+| T5 | **Target:** Program header property extraction.<br>**Setup:** Parse an ELF file with known program header values. | The program type, offset, virtual address, file size, and memory size exactly match the expected binary properties. |
+| T6 | **Target:** Segment struct population.<br>**Setup:** Pass valid program header data into the segment mapping logic. | The resulting `Segment` structs correctly store all mapped attributes from the parsed data. |
+| T7 | **Target:** ELF header formatting and printing.<br>**Setup:** Invoke the print function with a fully populated `ElfHeader` object. | The console output exactly matches the required header formatting and values. |
+| T8 | **Target:** Section struct formatting and printing.<br>**Setup:** Invoke the print function with a vector of populated `Section` structs. | The console output correctly formats and displays the index, name, offset, and size for all sections. |
+| T9 | **Target:** Segment struct formatting and printing.<br>**Setup:** Invoke the print function with a vector of populated `Segment` structs. | The console output correctly formats and displays all specified properties for all segments. |
