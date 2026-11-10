@@ -1,6 +1,9 @@
 # Technical Report: Refactoring
 ## 0. Overview
-The document presents the 
+The document presents the proposed design for an object-oriented version of a ELF Binary Inspector program. The application recieves binary file[s] from an input source, reads metadata about the file, then prints relevant information from the binary. The design prioritizes testability in modularity and should print out the metadata for the user.
+
+This report explains the main requirements of the program, the proposed object-oriented architecture, and tests. This report solely deals with design, which will be implemented in a further step.
+
 ## 1. Requirements
 
 <!--
@@ -22,6 +25,44 @@ Briefly describe the major functional requirements of your project.
 | R8 | Prints values from `ElfHeader` object. |
 | R9 | Prints values from all populated section structs. |
 | R10 | Prints values from all populated segment structs. |
+
+Example Print Output:
+```
+FBinaryInspector.exe sample.elf 
+File: sample.elf
+ELF64 | little-endian | x86-64 | DYN | Entry: 0x000000
+Program headers: offset=0x000040, entry_size=56, count=9
+Section headers: offset=0x0004c0, entry_size=64, count=14
+
+Sections
+INDEX   NAME            OFFSET        SIZE_BYTES
+0                       0x000000      0
+1       .interp         0x000238      28
+2       .dynsym         0x000258      24
+3       .gnu.hash       0x000270      28
+4       .dynstr         0x00028c      1
+5       .eh_frame_hdr   0x000290      20
+6       .eh_frame       0x0002a8      60
+7       .text           0x0002f0      18
+8       .dynamic        0x000308      128
+9       .relro_padding  0x000388      3192
+10      .comment        0x000388      59
+11      .symtab         0x0003c8      96
+12      .shstrtab       0x000428      124
+13      .strtab         0x0004a4      23
+
+Program headers
+IDX   TYPE            OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN
+0     PHDR            0x000040    0x000040   504       504     R--     0x000008
+1     INTERP          0x000238    0x000238   28        28      R--     0x000001
+2     LOAD            0x000000    0x000000   740       740     R--     0x001000
+3     LOAD            0x0002f0    0x0012f0   18        18      R-X     0x001000
+4     LOAD            0x000308    0x002308   128       3320    RW-     0x001000
+5     DYNAMIC         0x000308    0x002308   128       128     RW-     0x000008
+6     0x6474e552      0x000308    0x002308   128       3320    R--     0x000001
+7     0x6474e550      0x000290    0x000290   20        20      R--     0x000004
+8     0x6474e551      0x000000    0x000000   0         0       RW-     0x000000
+```
 
 ## System Design
 
