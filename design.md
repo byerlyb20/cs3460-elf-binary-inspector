@@ -41,14 +41,14 @@ Focus on explaining **how your design satisfies the requirements**, rather than 
 classDiagram
   class FileBuffer {
     +FileBuffer(path path)
-    +bytes() span~byte~
+    +bytes() span~const byte~
     -vector~byte~ data
   }
   class ElfBinary {
     +ElfHeader header
     +vector~Section~ sections
     +vector~Segment~ segments
-    +get_section_name_table() SectionNameTable
+    +create_section_name_resolver() unique_ptr~ISectionNameResolver~
   }
   class ElfHeader {
     +uint16_t type
@@ -63,13 +63,24 @@ classDiagram
   }
   class Section {
     +uint32_t index
+    +uint32_t name_offset
     +uint64_t offset
     +uint64_t size
-    +get_name() string
-    +get_body(FileBuffer body) span~byte~
+    +body(span~const byte~ file) span~const byte~
+    +get_name(span~const byte~ file, ISectionNameResolver& resolver) string
+    -optional~string~ cached_name
   }
-  class SectionNameTable {
-    +get_section_name(int index) string
+  class ISectionNameResolver {
+    <<interface>>
+    +name_at(span~const byte~ file, uint32_t offset) string_view
+  }
+  class SectionHeaderStringTable {
+    +SectionHeaderStringTable(Section& section)
+    +name_at(span~const byte~ file, uint32_t offset) string_view
+    -Section* section
+  }
+  class EmptySectionNameResolver {
+    +name_at(span~const byte~ file, uint32_t offset) string_view
   }
   class Segment {
     +uint32_t index
@@ -80,29 +91,36 @@ classDiagram
     +uint64_t file_size
     +uint64_t memory_size
     +uint64_t alignment
+    +file_body(span~const byte~ file) span~const byte~
   }
-  class ElfFactory {
-    +read_elf_from_file(span~byte~ file) ElfBinary
+  class ElfBinaryReader {
+    +read(span~const byte~ file) ElfBinary
   }
-  class ElfHeaderFactory {
-    +read_header_from_file(span~byte~ file) ElfHeader
+  class ElfHeaderReader {
+    +read(span~const byte~ file) ElfHeader
   }
-  class SectionFactory {
-    +create_section_from_shdr(span~byte~ shdr) Section
+  class SectionTableReader {
+    +read(span~const byte~ file, ElfHeader header) vector~Section~
   }
-  class SegmentFactory {
-    +create_segment_from_shdr(span~byte~ shdr) Segment
+  class ProgramHeaderTableReader {
+    +read(span~const byte~ file, ElfHeader header) vector~Segment~
   }
-  class ElfBinaryLogger {
-    +print(ElfBinary elf, span~byte~ file)
+  class ElfBinaryPrinter {
+    +print(ElfBinary elf, span~const byte~ file) void
   }
   ElfBinary "1" *-- "1" ElfHeader : header
   ElfBinary "1" *-- "*" Section : sections
   ElfBinary "1" *-- "*" Segment : segments
-  Section <|-- SectionNameTable
-  ElfFactory ..> ElfHeaderFactory
-  ElfFactory ..> SectionFactory
-  ElfFactory ..> SegmentFactory
+  ElfBinary ..> SectionHeaderStringTable : creates when available
+  ElfBinary ..> EmptySectionNameResolver : creates for SHN_UNDEF
+  Section ..> ISectionNameResolver : resolves name lazily
+  SectionHeaderStringTable ..|> ISectionNameResolver
+  EmptySectionNameResolver ..|> ISectionNameResolver
+  ElfBinaryReader ..> ElfHeaderReader
+  ElfBinaryReader ..> SectionTableReader
+  ElfBinaryReader ..> ProgramHeaderTableReader
+  SectionHeaderStringTable --> Section : wraps
+  ElfBinaryPrinter ..> ElfBinary
 ```
 
 ## Test Design
