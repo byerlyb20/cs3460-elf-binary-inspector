@@ -1,8 +1,8 @@
 # Technical Report: Refactoring
 ## 0. Overview
-The document presents the proposed design for an object-oriented version of a ELF Binary Inspector program. The application recieves binary file[s] from an input source, reads metadata about the file, then prints relevant information from the binary. The design prioritizes testability in modularity and should print out the metadata for the user.
+The document presents the proposed design for an object-oriented version of an ELF Binary Inspector program. The application recieves a binary file from an input source, reads metadata about the file, then prints relevant information from the binary. The design prioritizes testability and modularity.
 
-This report explains the main requirements of the program, the proposed object-oriented architecture, and tests. This report solely deals with design, which will be implemented in a further step.
+This report explains the main requirements of the program, technical details of how those requirements are met including our proposed object-oriented architecture, and tests. This report solely deals with design, which will be implemented in a further step.
 
 ## 1. Requirements
 
@@ -15,16 +15,14 @@ Briefly describe the major functional requirements of your project.
 
 | ID | Requirement |
 |---|---|
-| R1 | Reads and validates `Elf64_Ehdr` for magic number, class, data endianness, version, and machine architecture (supports little-endian, x86-64). |
-| R2 | Creates an `ElfHeader` object from a valid ELF binary with all fields populated. |
-| R3 | Reads section size and offset for all section headers present in binary. |
-| R4 | Reads section names from the section name table for all section headers present in binary, failing safely with empty strings if the section name table index is `SHN_UNDEF`. |
-| R5 | Reads program headers from the program header table, validating the table's offset, count, and entry size against the file bounds. |
-| R6 | Reads program type, offset, virtual address, file size, and memory size. |
-| R7 | Populates a segment struct with values read from the program header table. |
-| R8 | Prints values from `ElfHeader` object. |
-| R9 | Prints values from all populated section structs. |
-| R10 | Prints values from all populated segment structs. |
+| R1 | Reads and validates ELF header for magic number, class, data endianness, version, and machine architecture (supports little-endian, x86-64). |
+| R2 | Reads section headers from the section header table, validating the table's offset, count, and entry size against the file bounds. |
+| R3 | Reads section names from the section name table for all section headers present in binary, failing safely with empty strings if the section name table index is `SHN_UNDEF`. |
+| R4 | Reads program headers from the program header table, validating the table's offset, count, and entry size against the file bounds. |
+| R5 | Reads program type, offset, virtual address, file size, and memory size. |
+| R6 | Prints endianness, machine architecture, class, counts, sizes, and offsets for program headers and section headers from ELF header according to the format below. |
+| R7 | Prints index, name, offset, and size for all sections according to the format below. |
+| R8 | Prints index, type, offset, virtual address, file size, memory size, memory access permissions, and alignment for all program headers according to the format below. |
 
 Example Print Output:
 ```
@@ -77,6 +75,10 @@ Include representative C++ class declarations where helpful.
 
 Focus on explaining **how your design satisfies the requirements**, rather than simply listing classes and functions.
 -->
+
+`ElfHeaderReader` validates the ELF header (R1) and creates an `ElfHeader` object. `SectionTableReader` creates a vector of `Section` objects for each section header in the section header table (R2). `ProgramHeaderTableReader` creates a vector of `Segment` objects for each program header in the program header table (R4). `ElfBinaryReader` orchestrates all of the previously described work to create a complete `ElfBinary`.
+
+`ElfBinaryPrinter` uses an `ElfBinary` to print values from the header (R6), each section (R7), and each segment (R8). Section names are resolved lazily using an implementation of `ISectionNameResolver`: `SectionheaderStringTable` reads section names from the section name table if available, otherwise `EmptySectionNameResolver` resolves empty strings when the section name table index is `SHN_UNDEF` (R3).
 
 ```mermaid
 classDiagram
