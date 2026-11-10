@@ -1,17 +1,10 @@
 # Technical Report: Refactoring
 ## 0. Overview
-The document presents the proposed design for an object-oriented version of an ELF Binary Inspector program. The application recieves a binary file from an input source, reads metadata about the file, then prints relevant information from the binary. The design prioritizes testability and modularity.
+This report presents the proposed object-oriented design for an ELF Binary Inspector. The application receives a binary file, validates and reads its metadata, then prints a concise inspection report. The design prioritizes clear ownership, validation, and testability.
 
 This report explains the main requirements of the program, technical details of how those requirements are met including our proposed object-oriented architecture, and details of how those requirements are tested. This report solely deals with design, which will be implemented in a further step.
 
 ## 1. Requirements
-
-<!--
-Briefly describe the major functional requirements of your project.
-- Identify what the system should do.
-- Make each requirement clear and testable.
-- Use requirement IDs (e.g., R1, R2, R3) for reference.
--->
 
 | ID | Requirement |
 |---|---|
@@ -65,25 +58,15 @@ IDX   TYPE            OFFSET      VADDR      FILE_B    MEM_B   R/W/X   ALIGN
 
 ## System Design
 
-<!--
-Describe how you plan to organize your project using C++ classes. Your design should include:
+`FileBuffer` owns the bytes read from the input path and exposes a read-only byte span. `ElfHeader`, `Section`, and `Segment` are value objects: they retain only validated metadata (including offsets and sizes), not pointers into the input buffer. `ElfBinary` owns one header plus its vectors of sections and segments, giving the printer one complete, valid model to inspect.
 
-- **Major classes:** Explain the responsibility, important data members, and main functions/interfaces of each class.
-- **Class relationships:** Provide a UML class diagram or equivalent diagram showing how the classes are related (e.g., composition, inheritance, or usage).
-- **Class interactions:** Explain how the classes work together to implement the major system functionality.
+`ElfHeaderReader` validates the ELF identity and supported target, then returns an `ElfHeader` (R1). `SectionTableReader` and `ProgramHeaderTableReader` validate each table's offset, count, entry size, and referenced data ranges before producing value objects (R2, R4, and R5). `ElfBinaryReader` coordinates those readers: `FileBuffer` supplies bytes, the header is read first, then the two tables are read, and any validation failure prevents an `ElfBinary` from being returned.
 
-Include representative C++ class declarations where helpful.
-
-Focus on explaining **how your design satisfies the requirements**, rather than simply listing classes and functions.
--->
-
-`ElfHeaderReader` validates the ELF header (R1) and creates an `ElfHeader` object. `SectionTableReader` creates a vector of `Section` objects for each section header in the section header table (R2). `ProgramHeaderTableReader` creates a vector of `Segment` objects for each program header in the program header table (R4). `ElfBinaryReader` orchestrates all of the previously described work to create a complete `ElfBinary`.
-
-`ElfBinaryPrinter` uses an `ElfBinary` to print values from the header (R6), each section (R7), and each segment (R8). Section names are resolved lazily using an implementation of `ISectionNameResolver`: `SectionheaderStringTable` reads section names from the section name table if available, otherwise `EmptySectionNameResolver` resolves empty strings when the section name table index is `SHN_UNDEF` (R3).
+After a successful read, `SectionNameResolverFactory` selects a name-resolution strategy from the header. `SectionHeaderStringTable` uses the validated string-table section to resolve each section's stored `name_offset`; `EmptySectionNameResolver` returns empty names for `SHN_UNDEF` (R3). Finally, `ElfBinaryPrinter` receives the complete model, original read-only bytes, and resolver to print the header, section rows, and program-header rows (R6–R8). This separates parsing, model construction, name lookup, and formatting so each can be tested independently.
 
 ### Optional Bonus
 
-R3 specifies that we must resolve empty strings for section names if the section name table index is undefined. Our proposed system design uses the **Strategy pattern** to support resolution of section names in different ways. `Section` delegates resolution of it's section name to `ISectionNameResolver`, which has two concrete implementations: `SectionHeaderStringTable` resolves offsets using the section header string table section, and `EmptySectionNameResolver` handles ELF files with `SHN_UNDEF`. We use the **Factory pattern** to encapsulate the decision between these concrete implementations within a `SectionNameResolverFactory` class.
+R3 requires empty names when the section-name table index is undefined. The **Strategy pattern** lets `Section` delegate name lookup to `ISectionNameResolver`: `SectionHeaderStringTable` resolves offsets through a valid string table, while `EmptySectionNameResolver` handles `SHN_UNDEF`. The **Factory pattern** confines the choice of strategy to `SectionNameResolverFactory`. This avoids conditional name-resolution logic in both `Section` and `ElfBinaryPrinter`, while allowing future resolver types without changing them.
 
 ```mermaid
 classDiagram
@@ -170,6 +153,7 @@ classDiagram
   ElfBinaryReader ..> ElfHeaderReader
   ElfBinaryReader ..> SectionTableReader
   ElfBinaryReader ..> ProgramHeaderTableReader
+  FileBuffer ..> ElfBinaryReader : supplies bytes
   SectionHeaderStringTable --> Section : wraps
   ElfBinaryPrinter ..> ElfBinary
   ElfBinaryPrinter ..> ISectionNameResolver : uses
@@ -177,32 +161,16 @@ classDiagram
 
 ## Test Design
 
-<!--
-Design tests to verify the major requirements and system functionality. For each test, provide:
-
-- **Target:** The requirement or component being tested.
-- **Input/Setup:** The input or conditions required.
-- **Expected Result:** The expected behavior or output.
-
-Include normal cases and important error/edge cases.
-
-Briefly explain how your planned tests cover the major requirements.
-
-You only need to design the tests in this milestone. They will be implemented and executed in the final milestone.
--->
-
-The tests are based on the requirements listed above and include both unit tests and integrated or end-to-end tests. Unit tests include things like ensuring a segment can be created using the reader, or that a name can be retrieved from the section name table. 
-
-End-to-end tests include things like ensuring that all metadata desired is printed when the program is given an ELF Binary file. The following test cases specify expected behavior and will be implemented in a further step:
+The final milestone will use unit tests for readers, range checks, and name strategies, plus end-to-end tests that capture the executable's output. The following cases cover every requirement, normal operation, and important invalid-input boundaries:
 
 ### Planned Test Cases
 
 | Test ID | Target | Setup | Expected Result |
 |---|---|---|---|
-| T1 | R1 — ELF-header validation | Run the executable with a supported ELF fixture and fixtures with invalid magic bytes, class, endianness, version, and machine architecture. | The supported fixture is accepted. Each unsupported fixture is rejected safely with a useful error message and without a normal inspection report. |
-| T2 | R2 — Section-header table | Run the executable with a known-good fixture, then fixtures whose section-header offset, count, or entry size is inconsistent with the file bounds. | The good fixture lists every expected section. Each malformed fixture is rejected safely without printing misleading section data. |
-| T3 | R3 — Section-name lookup | Run the executable with a fixture containing known section names and a copy with `e_shstrndx` set to `SHN_UNDEF`. | Names in the normal fixture match the expected names. The `SHN_UNDEF` fixture completes successfully and prints empty names for every section. |
-| T4 | R4 — Program-header table | Run the executable with a known-good fixture, then fixtures whose program-header offset, count, or entry size is inconsistent with the file bounds. | The good fixture lists every expected program header. Each malformed fixture is rejected safely without printing misleading program-header data. |
+| T1 | R1 — ELF-header validation | Use a supported fixture; a truncated header; and fixtures with invalid magic, class, endianness, version, or machine architecture. | The supported fixture is accepted. Every invalid fixture is rejected with a useful error and no normal inspection report. |
+| T2 | R2 — Section-header table | Use a known-good fixture and fixtures with invalid table offset, count, entry size, or section data range. | The good fixture lists every expected section. Each malformed fixture is rejected without misleading section data. |
+| T3 | R3 — Section-name lookup | Use known names; then modify fixtures for `SHN_UNDEF`, an invalid string-table index/type, an out-of-range name offset, and an unterminated name. | Normal names match. `SHN_UNDEF` completes with empty names. Every other malformed name-table case is rejected safely. |
+| T4 | R4 — Program-header table | Use a known-good fixture, an ELF with zero program headers, and fixtures with invalid table offset, count, entry size, or segment data range. | Good headers are listed; the zero-table file succeeds with no rows; malformed fixtures are rejected without misleading data. |
 | T5 | R5 — Program-header values | Run the executable with a fixture whose program-header type, offset, virtual address, file size, and memory size have known values. | The printed values match the fixture's expected output exactly. |
 | T6 | R6 — ELF-header output | Run the executable with the known-good fixture and capture standard output. | The header portion includes the required class, endianness, architecture, table counts, entry sizes, and offsets in the specified format. |
 | T7 | R7 — Section output | Run the executable with the known-good fixture and capture standard output. | The sections portion contains one correctly formatted row per section with its index, name, offset, and size. |
