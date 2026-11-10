@@ -12,7 +12,7 @@ Briefly describe the major functional requirements of your project.
 
 | ID | Requirement |
 |---|---|
-| R1 | Reads and validates `Elf64_Ehdr.e_ident` for magic number, class, data endianness, version, and machine architecture (supports little-endian, x86-64). |
+| R1 | Reads and validates `Elf64_Ehdr` for magic number, class, data endianness, version, and machine architecture (supports little-endian, x86-64). |
 | R2 | Creates an `ElfHeader` object from a valid ELF binary with all fields populated. |
 | R3 | Reads section size and offset for all section headers present in binary. |
 | R4 | Reads section names from the section name table for all section headers present in binary, failing safely with empty strings if the section name table index is `SHN_UNDEF`. |
