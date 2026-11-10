@@ -182,7 +182,7 @@ Briefly explain how your planned tests cover the major requirements.
 You only need to design the tests in this milestone. They will be implemented and executed in the final milestone.
 -->
 
-The tests are based on the requirements listed above and include both singular component tests and integrated or end-to-end tests. Singular component tests include things like ensuring a segment can be created using the factory, or that a name can be retrieved from the section name table. 
+The tests are based on the requirements listed above and include both unit tests and integrated or end-to-end tests. Unit tests include things like ensuring a segment can be created using the factory, or that a name can be retrieved from the section name table. 
 
 End-to-end tests include things like ensuring that all metadata desired is printed when the program is given an ELF Binary file. The following test cases specify expected behavior and will be implemented in a further step:
 
