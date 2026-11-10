@@ -31,25 +31,70 @@ Focus on explaining **how your design satisfies the requirements**, rather than 
 
 ```mermaid
 classDiagram
-  class Customer {
-    +String name
-    +String email
+  class FileBuffer {
+    +FileBuffer(path path)
+    +bytes() span~byte~
+    -vector~byte~ data
   }
-  class Order {
-    +String id
-    +Date placedAt
-    +total() Money
+  class ElfBinary {
+    +ElfHeader header
+    +vector~Section~ sections
+    +vector~Segment~ segments
+    +get_section_name_table() SectionNameTable
   }
-  class LineItem {
-    +int quantity
+  class ElfHeader {
+    +uint16_t type
+    +uint64_t entry
+    +uint64_t program_header_offset
+    +uint16_t program_header_entry_size
+    +uint16_t program_header_count
+    +uint64_t section_header_offset
+    +uint16_t section_header_entry_size
+    +uint16_t section_header_count
+    +uint16_t section_name_table_index
   }
-  class Payment {
-    <<interface>>
-    +authorise() bool
+  class Section {
+    +uint32_t index
+    +uint64_t offset
+    +uint64_t size
+    +get_name() string
+    +get_body(FileBuffer body) span~byte~
   }
-  Customer "1" --> "*" Order : places
-  Order "1" *-- "*" LineItem : contains
-  Order --> Payment : settled by
+  class SectionNameTable {
+    +get_section_name(int index) string
+  }
+  class Segment {
+    +uint32_t index
+    +uint32_t type
+    +uint32_t flags
+    +uint64_t offset
+    +uint64_t virtual_address
+    +uint64_t file_size
+    +uint64_t memory_size
+    +uint64_t alignment
+  }
+  class ElfFactory {
+    +read_elf_from_file(span~byte~ file) ElfBinary
+  }
+  class ElfHeaderFactory {
+    +read_header_from_file(span~byte~ file) ElfHeader
+  }
+  class SectionFactory {
+    +create_section_from_shdr(span~byte~ shdr) Section
+  }
+  class SegmentFactory {
+    +create_segment_from_shdr(span~byte~ shdr) Segment
+  }
+  class ElfBinaryLogger {
+    +print(ElfBinary elf, span~byte~ file)
+  }
+  ElfBinary "1" *-- "1" ElfHeader : header
+  ElfBinary "1" *-- "*" Section : sections
+  ElfBinary "1" *-- "*" Segment : segments
+  Section <|-- SectionNameTable
+  ElfFactory ..> ElfHeaderFactory
+  ElfFactory ..> SectionFactory
+  ElfFactory ..> SegmentFactory
 ```
 
 ## Test Design
